@@ -2,48 +2,15 @@ package impl
 
 import (
 	"context"
-	"crypto/tls"
 	"net/http"
-	"os"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/luthermonson/go-proxmox"
 	"github.com/rs/zerolog/log"
 )
 
 func Term(c *gin.Context) {
-	insecureHTTPClient := http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
-
-	credentials := proxmox.Credentials{
-		Username: os.Getenv("PROXMOX_USERNAME"),
-		Password: os.Getenv("PROXMOX_PASSWORD"),
-	}
-	client := proxmox.NewClient(os.Getenv("PROXMOX_URL"),
-		proxmox.WithHTTPClient(&insecureHTTPClient),
-		proxmox.WithCredentials(&credentials),
-	)
-
-	node, err := client.Node(context.Background(), os.Getenv("PROXMOX_NODE"))
-	if err != nil {
-		log.Error().Err(err).Msg("Error getting version")
-		return
-	}
-
-	vmId, err := strconv.Atoi(os.Getenv("PROXMOX_VM"))
-	if err != nil {
-		log.Error().Err(err).Msg("Error getting version")
-		return
-	}
-
-	vm, err := node.VirtualMachine(context.Background(), vmId)
+	vm, err := GetVm()
 	if err != nil {
 		log.Error().Err(err).Msg("Error getting version")
 		return
@@ -79,7 +46,6 @@ func Term(c *gin.Context) {
 	go writer(ws, recv, errs, done)
 
 	<-done
-	send <- "exit\n"
 }
 
 func reader(ws *websocket.Conn, send chan string, done chan struct{}) {

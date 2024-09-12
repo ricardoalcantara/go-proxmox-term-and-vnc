@@ -33,5 +33,5 @@ func main() {
 	r.GET("/term", impl.Term)
 	r.GET("/vnc", impl.Vnc)
 
-	r.Run()
+	r.RunTLS(":8523", "server.crt", "server.key")
 }
