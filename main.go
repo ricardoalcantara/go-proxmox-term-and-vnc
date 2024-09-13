@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/ricardoalcantara/go-proxmox-term-and-vnc/impl"
@@ -24,14 +25,18 @@ func main() {
 		Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	godotenv.Load()
 
+	impl.Init()
+
 	log.Info().Msg("starting server")
 	r := gin.Default()
+	r.Use(cors.Default())
 
 	r.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "hello world")
 	})
 	r.GET("/term", impl.Term)
 	r.GET("/vnc", impl.Vnc)
+	r.GET("/vnc-ticket", impl.VncTicket)
 
 	r.RunTLS(":8523", "server.crt", "server.key")
 }

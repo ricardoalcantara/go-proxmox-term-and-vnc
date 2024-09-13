@@ -16,13 +16,14 @@ func Term(c *gin.Context) {
 		return
 	}
 
-	vnc, err := vm.TermProxy(context.Background())
+	term, err := vm.TermProxy(context.Background())
 	if err != nil {
 		log.Error().Err(err).Msg("Error getting version")
 		return
 	}
+	log.Debug().Any("VNC", term).Send()
 
-	send, recv, errs, close, err := vm.VNCWebSocket(vnc)
+	send, recv, errs, close, err := vm.TermWebSocket(term)
 	if err != nil {
 		log.Error().Err(err).Msg("Error getting version")
 		return
@@ -48,7 +49,7 @@ func Term(c *gin.Context) {
 	<-done
 }
 
-func reader(ws *websocket.Conn, send chan string, done chan struct{}) {
+func reader(ws *websocket.Conn, send chan []byte, done chan struct{}) {
 	for {
 		_, msg, err := ws.ReadMessage()
 		if err != nil {
@@ -58,21 +59,19 @@ func reader(ws *websocket.Conn, send chan string, done chan struct{}) {
 			done <- struct{}{}
 			return
 		}
-		send <- string(msg)
+		send <- msg
 	}
 }
 
-func writer(ws *websocket.Conn, recv chan string, errs chan error, done chan struct{}) {
+func writer(ws *websocket.Conn, recv chan []byte, errs chan error, done chan struct{}) {
 	for {
 		select {
 		case msg := <-recv:
-			if msg != "" {
-				err := ws.WriteMessage(websocket.TextMessage, []byte(msg))
-				if err != nil {
-					done <- struct{}{}
-					log.Error().Err(err).Send()
-					return
-				}
+			err := ws.WriteMessage(websocket.TextMessage, msg)
+			if err != nil {
+				done <- struct{}{}
+				log.Error().Err(err).Send()
+				return
 			}
 
 		case err := <-errs:

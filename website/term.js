@@ -11,7 +11,7 @@ const term = new Terminal({
 });
 term.open(document.getElementById("terminal"));
 
-const url = "wss://192.168.1.107:8523/term";
+const url = "wss://term-and-vnc.toquinha.online/term";
 const socket = new WebSocket(url);
 const attachAddon = new AttachAddon(socket);
 term.loadAddon(attachAddon);
